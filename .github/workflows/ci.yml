@@ -34,6 +34,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run Lint
+        if: matrix.node-version == '20.x'
         run: pnpm run lint
 
       - name: Run Build Core
