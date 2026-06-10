@@ -1,0 +1,43 @@
+{
+  "name": "@skillsmap/core",
+  "version": "0.1.0",
+  "description": "Core routing engine and package manager CLI for SkillsMap",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "skillsmap": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "skillsmap.schema.json"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "bench": "vitest bench --run",
+    "typecheck": "tsc --project tsconfig.test.json --noEmit"
+  },
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.34",
+    "@vitest/coverage-v8": "^1.6.0",
+    "execa": "^8.0.1",
+    "tsup": "^8.1.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

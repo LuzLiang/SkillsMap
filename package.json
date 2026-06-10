@@ -1,0 +1,32 @@
+{
+  "name": "@skillsmap/monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SkillsMap pnpm monorepo workspace containing the core engine and dashboard UI",
+  "scripts": {
+    "build:core": "pnpm --filter @skillsmap/core build",
+    "build:dashboard": "pnpm --filter @skillsmap/dashboard build",
+    "dev:dashboard": "pnpm --filter @skillsmap/dashboard dev",
+    "build": "pnpm run build:core",
+    "test": "pnpm --filter @skillsmap/core test",
+    "bench": "pnpm --filter @skillsmap/core bench",
+    "lint": "eslint \"packages/**/*.ts\"",
+    "lint:fix": "eslint \"packages/**/*.ts\" --fix"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.60.1",
+    "@typescript-eslint/parser": "^8.60.1",
+    "eslint": "^10.4.1",
+    "typescript": "^5.4.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

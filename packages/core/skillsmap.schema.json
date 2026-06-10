@@ -1,0 +1,132 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SkillsMap Configuration Schema",
+  "description": "JSON Schema for SkillsMap workspace configurations (skillsmap.json)",
+  "definitions": {
+    "SkillNode": {
+      "type": "object",
+      "required": ["id", "name", "description", "path", "tags"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "description": "Unique skill identifier (alphanumeric, hyphens, and underscores)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable label for the skill"
+        },
+        "description": {
+          "type": "string",
+          "description": "Textual description used for BM25 matching"
+        },
+        "path": {
+          "type": "string",
+          "description": "Relative or absolute path to the skill entrypoint file"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of keywords for sub-linear tag overlap normalization matching"
+        },
+        "domain": {
+          "type": "string",
+          "description": "Category domain for Stage 0 filtering"
+        },
+        "category": {
+          "type": "string",
+          "description": "Custom secondary classification (free form)"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "IDs of preceding skills defining the directed acyclic graph (DAG)"
+        },
+        "priority": {
+          "type": "number",
+          "minimum": -1.0,
+          "maximum": 1.0,
+          "description": "Base scoring weight bias (defaults to 0, range [-1.0, 1.0])"
+        },
+        "triggers": {
+          "type": "object",
+          "properties": {
+            "regex": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Literal regex patterns for immediate matching"
+            },
+            "keywords": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Trigger words for keyword match stage"
+            },
+            "keywordsMatch": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": ["all", "any"]
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              ],
+              "description": "Match requirements (default: 'any', can be a minimum count of matching keywords)"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["skills"],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "type": "string",
+          "description": "URL link referencing the skillsmap schema JSON definition"
+        },
+        "fallbackNodeId": {
+          "type": "string",
+          "description": "Default fallback skill ID to route to if no match is found"
+        },
+        "domains": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": "Custom classification domains mapping to lists of trigger keywords"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SkillNode"
+          },
+          "description": "List of skill definitions registered in the workspace"
+        }
+      }
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/SkillNode"
+      }
+    }
+  ]
+}

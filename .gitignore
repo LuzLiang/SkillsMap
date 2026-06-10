@@ -1,0 +1,27 @@
+# Dependency directories
+node_modules/
+
+# Build outputs
+**/dist/
+.tsup/
+dist-dashboard/
+coverage/
+
+# Local configuration & runtime state
+.skillsmap/
+.env
+.env.*.local
+
+# IDE/OS files
+.DS_Store
+.vscode/
+.idea/
+
+# Agent runtime state and system files
+.agents/
+$.agents/
+ORIGINAL_REQUEST.md
+PROJECT.md
+HANDOFF.md
+implementation_plan.md
+test-domain-config.json
