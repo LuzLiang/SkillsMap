@@ -47,13 +47,13 @@ A 4-stage pipeline filters and scores every registered skill against the user's 
 
 ```mermaid
 graph TD
-    A[User Prompt] --> B{Stage 0: Domain}
-    B -->|O(1) Set lookup| C[~20% candidates remain]
-    C --> D{Stage 1: Regex}
-    D -->|Instant triggers| E{Stage 2: Tags}
-    E -->|√ overlap/|tags|| F{Stage 3: BM25}
-    F -->|Document ranking| G[Combined Score]
-    G --> H[Best Match → Skill Path]
+    A["User Prompt"] --> B{"Stage 0: Domain"}
+    B -->|"O(1) Set lookup"| C["20% candidates remain"]
+    C --> D{"Stage 1: Regex"}
+    D -->|"Instant triggers"| E{"Stage 2: Tags"}
+    E -->|"Tag overlap score"| F{"Stage 3: BM25"}
+    F -->|"Document ranking"| G["Combined Score"]
+    G --> H["Best Match → Skill Path"]
 
     style A fill:#1f6feb,stroke:#58a6ff,color:#fff
     style H fill:#238636,stroke:#2ea043,color:#fff
