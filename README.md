@@ -1,6 +1,10 @@
 <p align="center">
-  <h1 align="center">SkillsMap</h1>
-  <p align="center">🗺️ The skill router your AI agent actually needs</p>
+  <img src="assets/banner.png" alt="SkillsMap Banner" width="100%">
+</p>
+
+<p align="center">
+  <strong>Skill Router for AI Agents</strong><br>
+  <em>Route prompts to the right skill in under 1ms. No LLM calls. No embeddings. Pure deterministic scoring.</em>
 </p>
 
 <p align="center">
@@ -12,65 +16,76 @@
   <img src="https://img.shields.io/badge/p50-0.89ms-blueviolet" alt="Latency">
 </p>
 
+<p align="center">
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#how-it-works">How It Works</a> •
+  <a href="#cli-reference">CLI</a> •
+  <a href="#sdk-usage">SDK</a> •
+  <a href="#performance">Performance</a> •
+  <a href="#security">Security</a>
+</p>
+
 ---
 
-## The Problem
+## Why SkillsMap?
 
-Your AI agent has 50 skills. Every time a user sends a prompt, you're loading all 50 into context — burning tokens, wasting memory, and confusing the model.
+Your AI agent has 50 skills. Every prompt loads all 50 into context — burning tokens, wasting memory, confusing the model.
 
-**SkillsMap fixes this.** It's a lightweight router that takes a user prompt and returns the single best-matching skill in under 1ms. No LLM calls. No embeddings. Pure deterministic scoring.
+| | Without SkillsMap | With SkillsMap |
+|:---|:---|:---|
+| **Context cost** | Load all 50 skills (~12,000 tokens) | Load 1 skill (~200 tokens) |
+| **Match speed** | LLM call (~2,000ms) | Deterministic scoring (< 1ms) |
+| **Accuracy** | Model "guesses" from a long list | BM25 + regex + tag hybrid ranking |
+| **Skill management** | Manual file copying | `install` / `register` / `uninstall` CLI |
+| **Dependency tracking** | None | DAG validation with cycle detection |
 
-```
-User: "deploy my app to AWS"
-
-Without SkillsMap:  Load all 50 skills into context     → 12,000 tokens
-With SkillsMap:     skillsmap route "deploy my app to AWS" → "deploy-aws" (0.94, 0.89ms)
-```
+---
 
 ## How It Works
 
 A 4-stage pipeline filters and scores every registered skill against the user's prompt:
 
-```
-                         ┌─────────────────────┐
-                         │    User Prompt       │
-                         └──────────┬──────────┘
-                                    │
-                         ┌──────────▼──────────┐
-                    ┌────│  Stage 0: Domain     │────┐
-                    │    │  O(1) Set lookup     │    │
-                    │    └──────────┬──────────┘    │
-                    │  80% eliminated                │
-                    │    ┌──────────▼──────────┐    │
-                    │    │  Stage 1: Regex      │    │
-                    │    │  Instant triggers    │    │
-                    │    └──────────┬──────────┘    │
-                    │    ┌──────────▼──────────┐    │
-                    │    │  Stage 2: Tag Match  │    │
-                    │    │  √(overlap/|tags|)   │    │
-                    │    └──────────┬──────────┘    │
-                    │    ┌──────────▼──────────┐    │
-                    │    │  Stage 3: BM25       │    │
-                    │    │  Document ranking    │    │
-                    │    └──────────┬──────────┘    │
-                    │               │                │
-                    │    ┌──────────▼──────────┐    │
-                    └───►│  Combined Score      │◄───┘
-                         │  + Tie-breaking      │
-                         └──────────┬──────────┘
-                                    │
-                         ┌──────────▼──────────┐
-                         │  Best Match → Path   │
-                         └─────────────────────┘
+```mermaid
+graph TD
+    A[User Prompt] --> B{Stage 0: Domain}
+    B -->|O(1) Set lookup| C[~20% candidates remain]
+    C --> D{Stage 1: Regex}
+    D -->|Instant triggers| E{Stage 2: Tags}
+    E -->|√ overlap/|tags|| F{Stage 3: BM25}
+    F -->|Document ranking| G[Combined Score]
+    G --> H[Best Match → Skill Path]
+
+    style A fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style H fill:#238636,stroke:#2ea043,color:#fff
 ```
 
-## Quick Start (< 60 seconds)
+**Stage 0 — Domain Classification**  
+Filter candidates by domain keywords using O(1) Set lookups. Eliminates ~80% of skills instantly.
+
+**Stage 1 — Regex Matching**  
+Deterministic pattern matching. Protected against ReDoS (lookarounds, backreferences, nested quantifiers blocked).
+
+**Stage 2 — Tag Overlap**  
+Measures prompt-to-tag coverage with sub-linear normalization: `√(intersection / |tags|)`. Favors neither sparse nor dense tag sets.
+
+**Stage 3 — BM25 Ranking**  
+Classic information retrieval scoring with incremental disk-cached index. Falls back to in-memory computation on cache miss.
+
+**Final Score**  
+`w1·regex + w2·tag + w3·bm25 + w4·priority`, clamped to [0, 1]. Tie-breaking: priority → definition order.
+
+---
+
+## Quick Start
 
 ```bash
-# Install
+# Install globally
 npm install -g @skillsmap/core
 
-# Register a local skill
+# Generate a config template
+skillsmap init
+
+# Register a local skill folder
 skillsmap register ./my-skills/git-helper
 
 # Or install from GitHub
@@ -78,22 +93,34 @@ skillsmap install https://github.com/user/skill-git.git
 
 # Route a prompt
 skillsmap route "help me rebase my git branch"
-# → ✅ Match Found: git-helper (score: 0.92, 0.7ms)
 ```
 
-## CLI Commands
+```
+🔍 Matching prompt: "help me rebase my git branch"
+✅ Match Found: git-helper
+   Path: /home/user/.skillsmap/skills/git-helper/index.js
+   Total Score: 0.92 (Regex: 0.00, Tag: 0.71, BM25: 0.95)
+   Routing Pathway: git-helper
+⏱️  Time: 0.7ms
+```
+
+---
+
+## CLI Reference
 
 | Command | Description |
 |:---|:---|
-| `skillsmap install <git-url>` | Install a skill from a Git repository |
-| `skillsmap register <path>` | Register a local skill directory |
-| `skillsmap uninstall <id> [-f]` | Uninstall (with dependency conflict check) |
+| `skillsmap init` | Generate a template `skillsmap.json` with schema link |
+| `skillsmap install <git-url>` | Clone and register a skill from Git |
+| `skillsmap register <path>` | Register a local skill directory (symlink) |
+| `skillsmap uninstall <id> [-f]` | Remove a skill (blocks if others depend on it) |
 | `skillsmap list [--format json] [--domain <x>]` | List all registered skills |
-| `skillsmap route "<prompt>" [--top N] [--verbose]` | Route a prompt to the best skill |
-| `skillsmap validate [-c <path>]` | Validate config DAG integrity |
-| `skillsmap index [-r]` | Rebuild BM25 index (incremental by default) |
-| `skillsmap init` | Generate a template `skillsmap.json` |
+| `skillsmap route "<prompt>" [--top N] [--verbose]` | Route prompt to best matching skill |
+| `skillsmap validate [-c <path>]` | Check DAG cycles, entrypoints, schema |
+| `skillsmap index [-r]` | Rebuild BM25 index (incremental, `-r` forces) |
 | `skillsmap dashboard [-p 4500]` | Start the telemetry cockpit server |
+
+---
 
 ## Define a Skill
 
@@ -119,52 +146,35 @@ Each skill is a folder with a `skill.json`:
 ```
 
 <details>
-<summary><strong>Full schema reference (click to expand)</strong></summary>
+<summary><strong>Full field reference</strong></summary>
 
-| Field | Type | Required | Description |
-|:---|:---|:---:|:---|
-| `id` | `string` | ✅ | Unique identifier (alphanumeric, hyphens, underscores) |
-| `name` | `string` | ✅ | Human-readable label |
-| `description` | `string` | ✅ | Used for BM25 semantic matching |
-| `path` | `string` | ✅ | Relative path to the skill entrypoint |
-| `tags` | `string[]` | ✅ | Keywords for tag overlap scoring |
-| `domain` | `string` | | Category domain for Stage 0 filtering |
-| `category` | `string` | | Free-form secondary classification |
-| `dependencies` | `string[]` | | Skill IDs that must run first (DAG) |
-| `priority` | `number` | | Score bias [-1.0, 1.0] (default: 0) |
-| `triggers.regex` | `string[]` | | Literal regex patterns (ReDoS-safe) |
-| `triggers.keywords` | `string[]` | | Required keywords for matching |
-| `triggers.keywordsMatch` | `"all" \| "any" \| number` | | Match mode (default: `"any"`) |
+| Field | Type | Required | Default | Description |
+|:---|:---|:---:|:---:|:---|
+| `id` | `string` | ✅ | — | Unique identifier (alphanumeric, `-`, `_`) |
+| `name` | `string` | ✅ | — | Human-readable label |
+| `description` | `string` | ✅ | — | Text used for BM25 semantic matching |
+| `path` | `string` | ✅ | — | Relative path to the entrypoint file |
+| `tags` | `string[]` | ✅ | — | Keywords for tag overlap scoring |
+| `domain` | `string` | | — | Domain for Stage 0 pre-filtering |
+| `category` | `string` | | — | Free-form secondary classification |
+| `dependencies` | `string[]` | | `[]` | Skill IDs that must run first |
+| `priority` | `number` | | `0` | Score bias in [-1.0, 1.0] |
+| `triggers.regex` | `string[]` | | — | Regex patterns (ReDoS-safe) |
+| `triggers.keywords` | `string[]` | | — | Required trigger keywords |
+| `triggers.keywordsMatch` | `"all" \| "any" \| number` | | `"any"` | How many keywords must match |
 
 </details>
 
-## SDK Usage
-
-```typescript
-import { Router, Installer } from '@skillsmap/core';
-
-// ── Routing ──────────────────────────────────────────
-const router = new Router(skills, 'fallback-id');
-const result = await router.route('deploy to aws', { top: 3, verbose: true });
-
-console.log(result.match.id);      // "deploy-aws"
-console.log(result.match.score);   // 0.94
-console.log(result.pathway);       // ["dockerize", "deploy-aws"]
-console.log(result.metrics);       // { regexScore, tagScore, bm25Score, executionTimeMs }
-
-// ── Package Management ───────────────────────────────
-const installer = new Installer();
-await installer.installFromGit('https://github.com/user/skill.git');
-await installer.registerLocal('./my-local-skill');
-const skills = await installer.list('json');
-```
+---
 
 ## Configuration
 
-SkillsMap uses a dual-layer configuration system:
+SkillsMap uses a **dual-layer configuration** system:
 
-1. **Global** (`~/.skillsmap/skillsmap.json`) — auto-generated from installed skills
-2. **Project** (`./skillsmap.json`) — optional, can `extends` the global config
+| Layer | Location | Purpose |
+|:---|:---|:---|
+| **Global** | `~/.skillsmap/skillsmap.json` | Auto-generated from installed skills |
+| **Project** | `./skillsmap.json` | Optional overrides, can `extends` global |
 
 ```json
 {
@@ -178,51 +188,118 @@ SkillsMap uses a dual-layer configuration system:
 }
 ```
 
-Config discovery order: `--config` flag → `$SKILLSMAP_CONFIG_PATH` → `./skillsmap.json` → `~/.skillsmap/skillsmap.json`
+**Discovery order:** `--config` flag → `$SKILLSMAP_CONFIG_PATH` → `./skillsmap.json` → `~/.skillsmap/skillsmap.json`
+
+---
+
+## SDK Usage
+
+```typescript
+import { Router, Installer } from '@skillsmap/core';
+
+// ── Routing ──────────────────────────────────────────────
+const router = new Router(skills, 'fallback-id', customDomains, configPath, {
+  regex: 1.0,   // weight for regex stage
+  tag: 0.4,     // weight for tag overlap
+  bm25: 0.5,    // weight for BM25 ranking
+  priority: 0.1 // weight for priority bias
+});
+
+const result = await router.route('deploy to aws', {
+  top: 3,       // return top N matches
+  verbose: true, // debug output to stderr
+  noCache: true  // skip disk BM25 index
+});
+
+console.log(result.match.id);      // "deploy-aws"
+console.log(result.match.score);   // 0.94
+console.log(result.pathway);       // ["dockerize", "deploy-aws"]
+console.log(result.metrics);       // { regexScore, tagScore, bm25Score, executionTimeMs }
+
+// ── Package Management ───────────────────────────────────
+const installer = new Installer('/custom/store');
+
+await installer.installFromGit('https://github.com/user/skill.git');
+await installer.registerLocal('./my-local-skill');
+await installer.uninstall('old-skill', true); // force override deps
+
+const all = await installer.list('json');
+```
+
+---
 
 ## Performance
 
-Benchmarked on 100 registered skills:
+Benchmarked with 100 registered skills on Node 20:
 
-| Metric | Result |
-|:---|:---|
-| p50 latency | **0.89ms** |
-| p99 latency | **2.32ms** |
-| Cold start memory | **< 15MB** |
-
-Run benchmarks yourself:
+| Metric | Value | Target |
+|:---|:---|:---|
+| **p50 latency** | `0.89ms` | < 3ms ✅ |
+| **p99 latency** | `2.32ms` | < 8ms ✅ |
+| **Cold start memory** | `< 15MB` | < 15MB ✅ |
+| **BM25 index build (100 skills)** | `~4ms` | — |
 
 ```bash
-pnpm bench
+pnpm bench    # run benchmarks yourself
 ```
+
+---
 
 ## Security
 
-- **Git URL whitelisting** — only GitHub HTTPS/SSH URLs allowed
-- **Path traversal prevention** — all file operations sandboxed to the skills directory
-- **ReDoS protection** — regex triggers validated against lookarounds, backreferences, and nested quantifiers
-- **Dependency conflict detection** — uninstall blocks if other skills depend on the target
+| Threat | Protection |
+|:---|:---|
+| **Remote Code Execution** | Git URL whitelist (GitHub HTTPS/SSH only) |
+| **Path Traversal** | All file ops sandboxed to `~/.skillsmap/skills/` |
+| **ReDoS** | Regex triggers validated: no lookarounds, backreferences, nested quantifiers |
+| **Dependency Conflicts** | `uninstall` blocks if other skills depend on target (override with `-f`) |
+| **Root Directory Registration** | Cannot register `/` or the store directory itself |
+
+---
 
 ## Project Structure
 
 ```
 SkillsMap/
 ├── packages/
-│   ├── core/                  # CLI & SDK (the only published package)
+│   ├── core/                      # The published package (@skillsmap/core)
 │   │   ├── src/
-│   │   │   ├── router.ts      # 4-stage routing engine
-│   │   │   ├── installer.ts   # Git/local skill installer
-│   │   │   ├── registry.ts    # Registry + BM25 index builder
-│   │   │   ├── config.ts      # Dual-layer config loader
-│   │   │   ├── validation.ts  # Schema + DAG + regex validation
-│   │   │   ├── server.ts      # Dashboard HTTP server
-│   │   │   └── cli.ts         # Commander-based CLI
-│   │   └── tests/             # 94 tests (unit + E2E)
-│   └── dashboard/             # Telemetry cockpit (Vite + React + SVG)
-├── .github/workflows/ci.yml   # CI on Node 18 & 20
-└── eslint.config.js
+│   │   │   ├── router.ts          # 4-stage routing engine
+│   │   │   ├── installer.ts       # Git/local skill installer
+│   │   │   ├── registry.ts        # Registry + BM25 index builder
+│   │   │   ├── config.ts          # Dual-layer config loader
+│   │   │   ├── validation.ts      # Schema + DAG + regex validation
+│   │   │   ├── server.ts          # Dashboard HTTP API server
+│   │   │   ├── demo-skills.ts     # Built-in demo skill set
+│   │   │   └── cli.ts             # Commander-based CLI entry
+│   │   ├── skillsmap.schema.json  # JSON Schema for IDE autocompletion
+│   │   └── tests/                 # 94 tests (unit + E2E + benchmarks)
+│   └── dashboard/                 # Telemetry cockpit (Vite + React + SVG)
+├── .github/workflows/ci.yml       # CI: lint, build, test, bench (Node 18 & 20)
+├── eslint.config.js               # Flat ESLint config
+└── CHANGELOG.md
 ```
+
+---
+
+## Contributing
+
+```bash
+git clone https://github.com/LuzLiang/SkillsMap.git
+cd SkillsMap
+pnpm install
+pnpm test        # run tests
+pnpm bench       # run benchmarks
+pnpm lint        # check code style
+```
+
+PRs welcome. Please ensure:
+- All tests pass (`pnpm test`)
+- Coverage stays above 90% line / 85% branch
+- No ESLint errors (`pnpm lint`)
+
+---
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) · Made with 🗺️ by [LuzLiang](https://github.com/LuzLiang)
