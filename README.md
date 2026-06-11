@@ -53,7 +53,7 @@ graph TD
     D -->|"Instant triggers"| E{"Stage 2: Tags"}
     E -->|"Tag overlap score"| F{"Stage 3: BM25"}
     F -->|"Document ranking"| G["Combined Score"]
-    G --> H["Best Match → Skill Path"]
+    G --> H["Best Match - Skill Path"]
 
     style A fill:#1f6feb,stroke:#58a6ff,color:#fff
     style H fill:#238636,stroke:#2ea043,color:#fff
