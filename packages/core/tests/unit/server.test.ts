@@ -136,6 +136,15 @@ describe('Dashboard Server Tests', () => {
     expect(body.match.id).toBe('git-init');
   });
 
+  it('should route X/Twitter automation prompts in the demo source', async () => {
+    const prompt = encodeURIComponent('search tweet replies for a giveaway draw');
+    const res = await fetchGet(`/api/route?prompt=${prompt}&source=demo`);
+    expect(res.status).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.status).toBe('success');
+    expect(body.match.id).toBe('tweetclaw-x-twitter');
+  });
+
   it('should serve index.html or 404 for non-existent assets gracefully', async () => {
     const res = await fetchGet('/non-existent-page');
     expect([200, 404]).toContain(res.status);
