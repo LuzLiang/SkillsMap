@@ -52,7 +52,7 @@ describe('CLI - Register Local Skill', () => {
     const skillsList = Array.isArray(skillsmap) ? skillsmap : Object.values(skillsmap.skills || skillsmap);
     const registeredSkill = skillsList.find((s: any) => s.id === 'valid-local-skill');
     expect(registeredSkill).toBeDefined();
-    expect(registeredSkill.path).toBe(path.join(localSkillDir, 'index.js'));
+    expect(registeredSkill.path).toBe(fs.realpathSync(path.join(localSkillDir, 'index.js')));
   });
 
   it('T2.2 (Dir Not Found - Exit 21): Attempt to register a non-existent local directory', async () => {
