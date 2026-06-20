@@ -43,7 +43,10 @@ Your AI agent has 50 skills. Every prompt loads all 50 into context — burning 
 
 ## How It Works
 
-A 4-stage pipeline filters and scores every registered skill against the user's prompt:
+A 4-stage pipeline filters and scores every registered skill against the user's prompt.
+
+<details>
+<summary>🔍 点击展开查看管道过滤与评分架构图 (Click to view pipeline flowchart)</summary>
 
 ```mermaid
 flowchart TD
@@ -79,6 +82,8 @@ flowchart TD
     Combine --> Rank["Sort by Score + Priority Tie-Breaker"]:::process
     Rank --> BestMatch(["🎯 Best Match - Skill Path"]):::output
 ```
+
+</details>
 
 
 **Stage 0 — Domain Classification**  
