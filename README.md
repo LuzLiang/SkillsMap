@@ -25,6 +25,10 @@
   <a href="#security">Security</a>
 </p>
 
+<p align="center">
+  🌐 <strong>English</strong> | <a href="README_CN.md">简体中文</a>
+</p>
+
 ---
 
 ## Why SkillsMap?
