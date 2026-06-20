@@ -105,7 +105,7 @@ export function tokenize(text: string): string[] {
   if (!text) return [];
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, ' ')
+    .replace(/[^\sa-zA-Z0-9\u00c0-\uffff]/g, ' ')
     .split(/\s+/)
     .filter(token => token.length > 0 && !STOPWORDS.has(token));
 }

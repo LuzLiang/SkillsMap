@@ -25,3 +25,7 @@ PROJECT.md
 HANDOFF.md
 implementation_plan.md
 test-domain-config.json
+
+# Local demo/test sandboxes
+demo-sandbox/
+
