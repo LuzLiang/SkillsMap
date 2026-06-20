@@ -46,18 +46,40 @@ Your AI agent has 50 skills. Every prompt loads all 50 into context — burning 
 A 4-stage pipeline filters and scores every registered skill against the user's prompt:
 
 ```mermaid
-graph TD
-    A["User Prompt"] --> B{"Stage 0: Domain"}
-    B -->|"O(1) Set lookup"| C["20% candidates remain"]
-    C --> D{"Stage 1: Regex"}
-    D -->|"Instant triggers"| E{"Stage 2: Tags"}
-    E -->|"Tag overlap score"| F{"Stage 3: BM25"}
-    F -->|"Document ranking"| G["Combined Score"]
-    G --> H["Best Match - Skill Path"]
+flowchart TD
+    %% Node Styles
+    classDef input fill:#1f6feb,stroke:#58a6ff,stroke-width:1px,color:#fff;
+    classDef process fill:#161b22,stroke:#30363d,stroke-width:1px,color:#c9d1d9;
+    classDef stage fill:#21262d,stroke:#30363d,stroke-width:2px,color:#c9d1d9;
+    classDef decision fill:#30363d,stroke:#8b949e,stroke-width:1px,color:#c9d1d9;
+    classDef output fill:#238636,stroke:#2ea043,stroke-width:2px,color:#fff;
 
-    style A fill:#1f6feb,stroke:#58a6ff,color:#fff
-    style H fill:#238636,stroke:#2ea043,color:#fff
+    Prompt(["💬 User Prompt"]):::input --> Tokenize["Tokenize Prompt"]:::process
+
+    subgraph Pipeline ["Pipeline Filtering & Scoring Engine"]
+        direction TB
+        
+        %% Stage 0
+        Tokenize --> Stage0{"Stage 0: Domain Check"}:::decision
+        Stage0 -->|Active Domain Match| Filtered["Filter Candidates (O(1) Set lookup)"]:::stage
+        Stage0 -->|No Domain Match| AllCandidates["Keep All Registered Skills"]:::stage
+        
+        %% Stage 1
+        Filtered & AllCandidates --> Stage1["Stage 1: Regex Matcher"]:::stage
+        Stage1 --> KeywordGuard{"Keyword Guard Passes?"}:::decision
+        
+        %% Stage 2 & 3
+        KeywordGuard -->|Yes| Stage2["Stage 2: Tag Overlap Score"]:::stage
+        KeywordGuard -->|No| Discarded["Discard Candidate"]:::process
+        Stage2 --> Stage3["Stage 3: BM25 Text Scoring"]:::stage
+    end
+
+    %% Scoring & Output
+    Stage3 --> Combine["Stage 4: Combine & Clamp Weights"]:::process
+    Combine --> Rank["Sort by Score + Priority Tie-Breaker"]:::process
+    Rank --> BestMatch(["🎯 Best Match - Skill Path"]):::output
 ```
+
 
 **Stage 0 — Domain Classification**  
 Filter candidates by domain keywords using O(1) Set lookups. Eliminates ~80% of skills instantly.
