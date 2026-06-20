@@ -138,7 +138,7 @@ describe('SkillsMap Unit Tests', () => {
     const mapContent = JSON.parse(fs.readFileSync(path.join(tempStoreDir, 'skillsmap.json'), 'utf8'));
     expect(mapContent).toHaveLength(1);
     expect(mapContent[0].id).toBe('test-local-skill');
-    expect(mapContent[0].path).toBe(path.resolve(mockLocalSkillDir, 'index.js'));
+    expect(mapContent[0].path).toBe(fs.realpathSync(path.resolve(mockLocalSkillDir, 'index.js')));
 
     // Verify skillsmap.index.json contains BM25 precomputations
     const indexContent = JSON.parse(fs.readFileSync(path.join(tempStoreDir, 'skillsmap.index.json'), 'utf8'));
@@ -217,7 +217,7 @@ describe('SkillsMap Unit Tests', () => {
     const mapContent = JSON.parse(fs.readFileSync(path.join(tempStoreDir, 'skillsmap.json'), 'utf8'));
     expect(mapContent).toHaveLength(1);
     expect(mapContent[0].id).toBe('test-git-skill');
-    expect(mapContent[0].path).toBe(path.resolve(skillStorePath, 'main.js'));
+    expect(mapContent[0].path).toBe(fs.realpathSync(path.resolve(skillStorePath, 'main.js')));
   });
 
   it('should handle errors and clean up temp directory on invalid git configurations', async () => {

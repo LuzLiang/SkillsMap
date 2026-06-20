@@ -89,6 +89,22 @@ const DEMO_SKILLS: SkillNode[] = [
     domain: 'ai',
     category: 'artificial-intelligence',
     priority: 0.4
+  },
+  {
+    id: 'tweetclaw-x-twitter',
+    name: 'TweetClaw X/Twitter Automation',
+    description: 'Routes X/Twitter automation requests for scraping tweets, searching tweet replies, posting tweets, follower export, media upload, webhooks, and API workflows',
+    path: 'index.js',
+    tags: ['twitter', 'x', 'tweet', 'tweets', 'tweet-scraper', 'replies', 'followers', 'media', 'webhooks', 'automation', 'api'],
+    domain: 'communication',
+    category: 'social-media',
+    priority: 0.35,
+    triggers: {
+      regex: [
+        '\\b(search|scrape|post|monitor)\\b.*\\b(tweet|tweets|twitter)\\b',
+        '\\b(tweet|tweets|twitter)\\b.*\\b(replies|reply|followers|media|webhooks|direct messages|direct message)\\b'
+      ]
+    }
   }
 ];
 
